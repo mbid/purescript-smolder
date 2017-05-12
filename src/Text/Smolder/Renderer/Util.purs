@@ -6,6 +6,7 @@ module Text.Smolder.Renderer.Util
 import Prelude
 import Data.StrMap as Map
 import Text.Smolder.Markup as Markup
+import DOM.HTML.Types (HTMLElement)
 import Data.CatList (CatList)
 import Data.List (List(Nil), (:))
 import Data.Maybe (Maybe(Just, Nothing))
@@ -14,6 +15,7 @@ import Data.Tuple (Tuple(Tuple))
 
 data Node e
   = Element String (StrMap String) (CatList (Markup.EventHandler e)) (List (Node e))
+  | RenderedElement HTMLElement
   | Text String
 
 renderMarkup :: forall a e. Markup.MarkupM e a -> List (Node e)
@@ -23,6 +25,7 @@ renderMarkup (Markup.Element name Nothing attrs events rest) =
   Element name (renderAttrs attrs) events Nil : renderMarkup rest
 renderMarkup (Markup.Content text rest) = Text text : renderMarkup rest
 renderMarkup (Markup.Return _) = Nil
+renderMarkup (Markup.RenderedElement el rest) = RenderedElement el : renderMarkup rest
 
 renderAttrs :: CatList Markup.Attr -> StrMap String
 renderAttrs = map toTuple >>> Map.fromFoldable

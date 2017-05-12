@@ -6,6 +6,7 @@ module Text.Smolder.Markup
   , parent
   , leaf
   , text
+  , renderedElement
   , Attribute()
   , class Attributable
   , with
@@ -21,6 +22,7 @@ module Text.Smolder.Markup
   ) where
 
 import Prelude
+import DOM.HTML.Types (HTMLElement)
 import Data.CatList (CatList)
 import Data.Maybe (Maybe(Just, Nothing))
 import Data.Monoid (class Monoid, mempty)
@@ -33,6 +35,7 @@ data MarkupM e a
   = Element String (Maybe (Markup e)) (CatList Attr) (CatList (EventHandler e)) (MarkupM e a)
   | Content String (MarkupM e a)
   | Return a
+  | RenderedElement HTMLElement (MarkupM e a)
 
 type Markup e = MarkupM e Unit
 
@@ -45,6 +48,9 @@ leaf el = Element el Nothing mempty mempty (Return unit)
 text :: forall e. String -> Markup e
 text s = Content s (Return unit)
 
+renderedElement :: forall e. HTMLElement -> Markup e
+renderedElement el = RenderedElement el (Return unit)
+
 instance semigroupMarkupM :: Semigroup (MarkupM e a) where
   append x y = x *> y
 
@@ -55,6 +61,7 @@ instance functorMarkupM :: Functor (MarkupM e) where
   map f (Element el kids attrs events rest) = Element el kids attrs events (map f rest)
   map f (Content s rest) = Content s (map f rest)
   map f (Return a) = Return (f a)
+  map f (RenderedElement el rest) = RenderedElement el (map f rest)
 
 instance applyMarkupM :: Apply (MarkupM e) where
   apply = ap
@@ -66,6 +73,7 @@ instance bindMarkupM :: Bind (MarkupM e) where
   bind (Element el kids attrs events rest) f = Element el kids attrs events (bind rest f)
   bind (Content s rest) f = Content s (bind rest f)
   bind (Return a) f = f a
+  bind (RenderedElement el rest) f = RenderedElement el (bind rest f)
 
 instance monadMarkupM :: Monad (MarkupM e)
 

@@ -11,7 +11,7 @@ import Data.StrMap (fromFoldable, keys, lookup, StrMap)
 import Data.String (Pattern(Pattern), split, joinWith)
 import Data.Tuple.Nested ((/\))
 import Text.Smolder.Markup (MarkupM)
-import Text.Smolder.Renderer.Util (Node(Text, Element), renderMarkup)
+import Text.Smolder.Renderer.Util (Node(Text, Element, RenderedElement), renderMarkup)
 
 escapeMap :: StrMap String
 escapeMap = fromFoldable
@@ -43,6 +43,7 @@ renderNode (Element n a e c) = "<" <> n <> showAttrs a <> showTail c
     pair :: String -> String
     pair k = " " <> k <> foldMap (\v -> "=\"" <> escape v <> "\"") (lookup k a')
 renderNode (Text s) = escape s
+renderNode (RenderedElement el) = ""
 
 -- | Render markup as an HTML string.
 render :: forall e a. MarkupM e a -> String
