@@ -23,6 +23,7 @@ module Text.Smolder.Markup
 
 import Prelude
 import DOM.HTML.Types (HTMLElement)
+import Data.Bifunctor (class Bifunctor, bimap)
 import Data.CatList (CatList)
 import Data.Maybe (Maybe(Just, Nothing))
 import Data.Monoid (class Monoid, mempty)
@@ -30,6 +31,9 @@ import Data.Monoid (class Monoid, mempty)
 data Attr = Attr String String
 
 data EventHandler e = EventHandler String e
+
+instance functorEventHandler ∷ Functor EventHandler where
+  map f (EventHandler s e) = EventHandler s (f e)
 
 data MarkupM e a
   = Element String (Maybe (Markup e)) (CatList Attr) (CatList (EventHandler e)) (MarkupM e a)
@@ -76,6 +80,13 @@ instance bindMarkupM :: Bind (MarkupM e) where
   bind (RenderedElement el rest) f = RenderedElement el (bind rest f)
 
 instance monadMarkupM :: Monad (MarkupM e)
+
+instance bifunctorMarkupM ∷ Bifunctor MarkupM where
+  bimap f g (Element el kids attrs events rest) =
+    Element el (map (bimap f id) kids) attrs (map (map f) events) (bimap f g rest)
+  bimap f g (Content s rest) = Content s (bimap f g rest)
+  bimap f g (Return a) = Return (g a)
+  bimap f g (RenderedElement el rest) = RenderedElement el (bimap f g rest)
 
 data Attribute = Attribute (CatList Attr)
 
